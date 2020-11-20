@@ -210,20 +210,20 @@ class DCCPacket:
 				retval = "Reserved"
 		elif cmd_msb == 4 or cmd_msb == 5:
 			cSpeed = (cmd_lsb << 1) | (cmd_msb & 0x01)
-			if cmd_lsb == 0 or cmd_lsb == 1:
+			if cSpeed == 0 or cSpeed == 1:
 				retval = "Speed 14/28 REV STOP"
-			elif cmd_lsb == 2 or cmd_lsb == 3:
+			elif cSpeed == 2 or cSpeed == 3:
 				retval = "Speed 14/28 REV ESTOP"
 			else:
 				retval = "Speed 14/28 REV %d" % (cSpeed - self.DCC_BASELINE_PACKET_SPEED_OFFSET)
 		elif cmd_msb == 6 or cmd_msb == 7:
 			cSpeed = (cmd_lsb << 1) | (cmd_msb & 0x01)
-			if cmd_lsb == 0 or cmd_lsb == 1:
-				retval = "Speed FWD STOP"
-			elif cmd_lsb == 2 or cmd_lsb == 3:
-				retval = "Speed FWD ESTOP"
+			if cSpeed == 0 or cSpeed == 1:
+				retval = "Speed 14/28 FWD STOP"
+			elif cSpeed == 2 or cSpeed == 3:
+				retval = "Speed 14/28 FWD ESTOP"
 			else:
-				retval = "Speed FWD %d" % (cSpeed - self.DCC_BASELINE_PACKET_SPEED_OFFSET)
+				retval = "Speed 14/28 FWD %d" % (cSpeed - self.DCC_BASELINE_PACKET_SPEED_OFFSET)
 		elif cmd_msb == 8 or cmd_msb == 9:
 			if (self.Data[self.NextByte] & 0x10):
 				retval = "Func grp 1 ON %d" % cmd_lsb
