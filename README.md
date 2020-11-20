@@ -4,6 +4,8 @@ This repository is for maintaining the Saleae High Level Analyzer associated wit
 
 This is a new repository and is currently under development. Look for noticies of updates on this page.
 
+The DCCUtilities HLA is designed to be used in conjunction with the JMRI helper script DCSControl.py in order to execute NMRA DCS Compliance tests on command stations. Strictly speaking, you don't need to run JMRI to use this HLA, however, the JMRI script automates the setup of the test scenarios needed to complete compliance testing.
+
 ## Installation
 
 Use the Logic 2 GUI to add the DCCUtilities directory to the user projects. Once you do that, you can add the DCCUtilities HLA to the analyzer along with the DCCAnalyzer LLA to decode packets.
