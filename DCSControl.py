@@ -29,11 +29,15 @@ class DCSConformanceTests:
 #-----------------------------------------------------------------------------------
 	def __init__(self):
 		self.test = {}	# dictionary of tests
-		self.jmri_speed_steps = [ 0.0,	# STOP
+		self.jmri_28_speed_step_table = [ 0.0,	# STOP
 								  1.0/28.0,  2.0/28.0,  3.0/28.0,  4.0/28.0,  5.0/28.0,  6.0/28.0,  7.0/28.0,	# speed steps 1-7
 								  8.0/28.0,  9.0/28.0, 10.0/28.0, 11.0/28.0, 12.0/28.0, 13.0/28.0, 14.0/28.0, 	# speed steps 8-14
 								 15.0/28.0, 16.0/28.0, 17.0/28.0, 18.0/28.0, 19.0/28.0, 20.0/28.0, 21.0/28.0, 	# speed steps 15-21
 								 22.0/28.0, 23.0/28.0, 24.0/28.0, 25.0/28.0, 26.0/28.0, 27.0/28.0, 28.0/28.0,	# speed steps 22-28
+								 -1.0]	# ESTOP
+		self.jmri_14_speed_step_table = [ 0.0,	# STOP
+								  1.0/14.0,  2.0/14.0,  3.0/14.0,  4.0/14.0,  5.0/14.0,  6.0/14.0,  7.0/14.0,	# speed steps 1-7
+								  8.0/14.0,  9.0/14.0, 10.0/14.0, 11.0/14.0, 12.0/14.0, 13.0/14.0, 14.0/14.0, 	# speed steps 8-14
 								 -1.0]	# ESTOP
 		self.jmri_speed_step_mode = 28
 		self.jmri_throttle_direction = True
@@ -80,9 +84,9 @@ class DCSConformanceTests:
 	#--------------------------------------------------------------------------
 	def runTest(self, name, dcs):
 		thisTest = self.test[name]
-		dcs.status.text = "Test: %s" % name
+		dcs.testStatus.text = "Test: %s" % name
 		thisTest(name, dcs) 
-		dcs.status.text = "Test: %s Done." % name
+		dcs.testStatus.text = "Test: %s Done." % name
 	#--------------------------------------------------------------------------
 	#
 	# Utility function to wait for a button press and return with an action
@@ -102,6 +106,38 @@ class DCSConformanceTests:
 			elif dcs.testExit:
 				dcs.testExit = False
 				return -1
+	#--------------------------------------------------------------------------
+	#
+	# Set the test value labels
+	#
+	#--------------------------------------------------------------------------
+	def setTestValueLabels(self, dcs, info, label1, value1, label2, value2, label3, value3):
+		if (info != None):
+			dcs.testInfoMessage.setText(info)
+		if (label1 != None):
+			dcs.testValueLabel1.setText(label1)
+		dcs.testValue1.text = "%d" % value1
+		if (label2 != None):
+			dcs.testValueLabel2.setText(label2)
+		dcs.testValue2.text = "%d" % value2
+		if (label3 != None):
+			dcs.testValueLabel3.setText(label3)
+		dcs.testValue3.text = "%d" % value3
+		return
+	#--------------------------------------------------------------------------
+	#
+	# Reset the test value labels
+	#
+	#--------------------------------------------------------------------------
+	def resetTestValueLabels(self, dcs):
+		dcs.testInfoMessage.setText("Test Value Labels with change if a test requires user input")
+		dcs.testValueLabel1.setText("Test Value 1")
+		dcs.testValueLabel2.setText("Test Value 2")
+		dcs.testValueLabel3.setText("Test Value 3")
+		dcs.testValue1.text = ""
+		dcs.testValue2.text = ""
+		dcs.testValue3.text = ""
+		return
 #-----------------------------------------------------------------------------------
 #
 # Common test functions for the JMRI setup features
@@ -109,11 +145,11 @@ class DCSConformanceTests:
 #-----------------------------------------------------------------------------------
 	#--------------------------------------------------------------------------
 	#
-	# Set the default throttle to 128 speed step mode
+	# Set the default throttle to 14 speed step mode
 	#
 	#--------------------------------------------------------------------------
-	def set128SpeedStepMode(self, dcs):
-		dcs.throttle.setSpeedStepMode(jmri.SpeedStepMode.NMRA_DCC_128)
+	def set14SpeedStepMode(self, dcs):
+		dcs.throttle.setSpeedStepMode(jmri.SpeedStepMode.NMRA_DCC_14)
 		return
 	#--------------------------------------------------------------------------
 	#
@@ -125,11 +161,21 @@ class DCSConformanceTests:
 		return
 	#--------------------------------------------------------------------------
 	#
+	# Set the default throttle to 128 speed step mode
+	#
+	#--------------------------------------------------------------------------
+	def set128SpeedStepMode(self, dcs):
+		dcs.throttle.setSpeedStepMode(jmri.SpeedStepMode.NMRA_DCC_128)
+		return
+	#--------------------------------------------------------------------------
+	#
 	# Set the default throttle to the default speed step mode
 	#
 	#--------------------------------------------------------------------------
 	def setSpeedStepMode(self, dcs):
-		if self.jmri_speed_step_mode == 28:
+		if self.jmri_speed_step_mode == 14:
+			self.set14SpeedStepMode(dcs)
+		elif self.jmri_speed_step_mode == 28:
 			self.set28SpeedStepMode(dcs)
 		elif self.jmri_speed_step_mode == 128:
 			self.set128SpeedStepMode(dcs)
@@ -163,11 +209,11 @@ class DCSConformanceTests:
 	# Set the default throttle the given speed step
 	#
 	#--------------------------------------------------------------------------
-	def getThrottleSpeedFromStep(self, step):
-		if step < 0 or step > len(self.jmri_speed_steps):
+	def getThrottleSpeedFrom28StepTable(self, step):
+		if step < 0 or step > len(self.jmri_28_speed_step_table):
 			return 0
 		else:
-			return self.jmri_speed_steps[step]
+			return self.jmri_28_speed_step_table[step]
 	#--------------------------------------------------------------------------
 	#
 	# Set the default throttle to the given speed value
@@ -176,6 +222,20 @@ class DCSConformanceTests:
 	def setThrottleSpeed(self, dcs, speed):
 		if (speed == -1 or (speed >= 0 and speed <= 1.0)):
 			dcs.throttle.setSpeedSetting(speed)
+		return
+	#--------------------------------------------------------------------------
+	#
+	# Set the default throttle to one of the 14 speed steps
+	#
+	# speeds steps are 0-15
+	# 0 = STOP
+	# 1-14 are speeds 1-14
+	# 15 = ESTOP
+	#
+	#--------------------------------------------------------------------------
+	def setThrottle14SpeedStep(self, dcs, step):
+		speed = self.getThrottleSpeedFrom14StepTable(step)
+		dcs.throttle.setSpeedSetting(speed)
 		return
 	#--------------------------------------------------------------------------
 	#
@@ -188,7 +248,7 @@ class DCSConformanceTests:
 	#
 	#--------------------------------------------------------------------------
 	def setThrottle28SpeedStep(self, dcs, step):
-		speed = self.getThrottleSpeedFromStep(step)
+		speed = self.getThrottleSpeedFrom28StepTable(step)
 		dcs.throttle.setSpeedSetting(speed)
 		return
 	#--------------------------------------------------------------------------
@@ -222,7 +282,7 @@ class DCSConformanceTests:
 		try:
 			dcs.throttle = dcs.getThrottle(self.jmri_test_throttle_address, self.jmri_test_throttle_address_long)
 		except:
-			dcs.status.text = "ERROR: Couldn't assign throttle: %d" % self.jmri_test_throttle_address
+			dcs.testStatus.text = "ERROR: Couldn't assign throttle: %d" % self.jmri_test_throttle_address
 			return
 
 		self.setSpeedStepMode(dcs)
@@ -263,7 +323,7 @@ class DCSConformanceTests:
 		# Execute the test
 		#
 		step = 0
-		last = len(self.jmri_speed_steps)-1
+		last = len(self.jmri_28_speed_step_table)-1
 		done = False
 		if self.jmri_throttle_direction:
 			thdir = "FWD"
@@ -279,8 +339,8 @@ class DCSConformanceTests:
 			else:
 				dcs.nextButton.enabled = True
 
-			speed = self.getThrottleSpeedFromStep(step)
-			dcs.status.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+			speed = self.getThrottleSpeedFrom28StepTable(step)
+			dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
 			self.setThrottle28SpeedStep(dcs, step)
 			action = self.waitForProceed(dcs)
 			if action == 1:
@@ -291,10 +351,10 @@ class DCSConformanceTests:
 				done = True
 
 		step = 0
-		speed = self.getThrottleSpeedFromStep(step)
+		speed = self.getThrottleSpeedFrom28StepTable(step)
 		self.setThrottle28SpeedStep(dcs, step)
 
-		dcs.status.text = "Test %s Done." % name
+		dcs.testStatus.text = "Test %s Done." % name
 		return
 #-----------------------------------------------------------------------------------
 #
@@ -338,7 +398,7 @@ class DCSConformanceTests:
 #	# Execute the test
 #	#
 #	speed = 0.0
-#	dcs.status.text = "Address = %d, Speed set to %f" % (self.jmri_test_throttle_address, speed)
+#	dcs.testStatus.text = "Address = %d, Speed set to %f" % (self.jmri_test_throttle_address, speed)
 #	self.setThrottleSpeed(dcs, speed)
 #	return
 #------------------------------------------------
@@ -361,10 +421,10 @@ class DCSConformanceTests:
 #------------------------------------------------
 	#-----------------------------------------------------------------------------------
 	#
-	# S-9.1-A.1-4, regular DCC packets, cab at stop
+	# S-9.1-cab3_full_stop, regular DCC packets, cab at stop
 	#	
 	#-----------------------------------------------------------------------------------
-	def test_Sdash9dot1dashAdot1dash4(self, name, dcs):
+	def test_Sdash9dot1dashcab3_full_stop(self, name, dcs):
 		#
 		# Configure global test settings
 		#
@@ -389,21 +449,87 @@ class DCSConformanceTests:
 		else:
 			thdir = "REV"
 		speed = 0.0
-		dcs.status.text = "Address = %d, %s Speed set to %f" % (self.jmri_test_throttle_address, thdir, speed)
+		dcs.testStatus.text = "Address = %d, %s Speed set to %f" % (self.jmri_test_throttle_address, thdir, speed)
 		self.setThrottleSpeed(dcs, speed)
 		return
 	#-----------------------------------------------------------------------------------
 	#
-	# S-9.1-A.5-6, stritch 0's, cab 0 at full speed
+	# S-9.1-cab0_full_stop, regular DCC packets, cab at stop
 	#	
 	#-----------------------------------------------------------------------------------
-	def test_Sdash9dot1dashAdot5dash6(self, name, dcs):
+	def test_Sdash9dot1dashcab0_full_stop(self, name, dcs):
 		#
 		# Configure global test settings
 		#
 		self.jmri_throttle_direction = True
 		self.jmri_test_throttle_address_long = False
 		self.jmri_test_throttle_address = 0
+		self.jmri_speed_step_mode = 28
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = False
+		#
+		# Configure the throttle
+		#
+		self.configureThrottle(dcs)
+		#
+		# Execute the test
+		#
+		if self.jmri_throttle_direction:
+			thdir = "FWD"
+		else:
+			thdir = "REV"
+		speed = 0.0
+		dcs.testStatus.text = "Address = %d, %s Speed set to %f" % (self.jmri_test_throttle_address, thdir, speed)
+		self.setThrottleSpeed(dcs, speed)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.1-cab0_full_speed, regular DCC packets, cab at full speed
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot1dashcab0_full_speed(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = True
+		self.jmri_test_throttle_address_long = False
+		self.jmri_test_throttle_address = 0
+		self.jmri_speed_step_mode = 28
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = False
+		#
+		# Configure the throttle
+		#
+		self.configureThrottle(dcs)
+		#
+		# Execute the test
+		#
+		if self.jmri_throttle_direction:
+			thdir = "FWD"
+		else:
+			thdir = "REV"
+		speed = 1.0
+		dcs.testStatus.text = "Address = %d, %s Speed set to %f" % (self.jmri_test_throttle_address, thdir, speed)
+		self.setThrottleSpeed(dcs, speed)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.2-A.1-short, cab 122 short address, forward speed step 1
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot2dashAdot1dashshort(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = True
+		self.jmri_test_throttle_address_long = False
+		self.jmri_test_throttle_address = 122
 		self.jmri_speed_step_mode = 28
 		#
 		# Configure the necessary buttons for this test
@@ -422,22 +548,202 @@ class DCSConformanceTests:
 			thdir = "FWD"
 		else:
 			thdir = "REV"
-		step = 28
-		speed = self.getThrottleSpeedFromStep(step)
-		dcs.status.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+		step = 1
+		speed = self.getThrottleSpeedFrom28StepTable(step)
+		dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
 		self.setThrottle28SpeedStep(dcs, step)
-		action = self.waitForProceed(dcs)
-		if action == 1:
-			step = 0
-			dcs.throttle.setSpeedSetting(speed)
-			dcs.status.text = "Test %s Done." % name
 		return
 	#-----------------------------------------------------------------------------------
 	#
-	# S-9.2-A.1, 28 speed steps forward
+	# S-9.2-A.1-long, cab 122 short address, forward speed step 1
 	#	
 	#-----------------------------------------------------------------------------------
-	def test_Sdash9dot2dashAdot1(self, name, dcs):
+	def test_Sdash9dot2dashAdot1dashlong(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = True
+		self.jmri_test_throttle_address_long = True
+		self.jmri_test_throttle_address = 122
+		self.jmri_speed_step_mode = 28
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = False
+		dcs.nextButton.enabled = True
+		#
+		# Configure the throttle
+		#
+		self.configureThrottle(dcs)
+		#
+		# Execute the test
+		#
+		if self.jmri_throttle_direction:
+			thdir = "FWD"
+		else:
+			thdir = "REV"
+		step = 1
+		speed = self.getThrottleSpeedFrom28StepTable(step)
+		dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+		self.setThrottle28SpeedStep(dcs, step)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.2-A.2-14step, cab 3 short address, reverse speed step 12
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot2dashAdot2dash14step(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = False
+		self.jmri_test_throttle_address_long = False
+		self.jmri_test_throttle_address = 3
+		self.jmri_speed_step_mode = 14
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = False
+		dcs.nextButton.enabled = True
+		#
+		# Configure the throttle
+		#
+		self.configureThrottle(dcs)
+		#
+		# Execute the test
+		#
+		if self.jmri_throttle_direction:
+			thdir = "FWD"
+		else:
+			thdir = "REV"
+		step = 12
+		speed = self.getThrottleSpeedFrom28StepTable(step)
+		dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+		self.setThrottle14SpeedStep(dcs, step)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.2-A.2-28step, cab 3 short address, reverse speed step 12
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot2dashAdot2dash28step(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = False
+		self.jmri_test_throttle_address_long = False
+		self.jmri_test_throttle_address = 3
+		self.jmri_speed_step_mode = 28
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = False
+		dcs.nextButton.enabled = True
+		#
+		# Configure the throttle
+		#
+		self.configureThrottle(dcs)
+		#
+		# Execute the test
+		#
+		if self.jmri_throttle_direction:
+			thdir = "FWD"
+		else:
+			thdir = "REV"
+		step = 12
+		speed = self.getThrottleSpeedFrom28StepTable(step)
+		dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+		self.setThrottle28SpeedStep(dcs, step)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.2-B.1, check documented address range
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot2dashBdot1(self, name, dcs):
+		#
+		# Configure global test settings
+		#
+		self.jmri_throttle_direction = True
+		self.jmri_test_throttle_address_long = False
+		self.jmri_test_throttle_address = 3
+		self.jmri_speed_step_mode = 28
+		#
+		# Configure the necessary buttons for this test
+		#
+		dcs.startButton.enabled = False
+		dcs.exitButton.enabled = True
+		dcs.nextButton.enabled = False
+		dcs.prevButton.enabled = False
+		dcs.doneButton.enabled = True
+		
+		addr1 = 1
+		addr2 = 63
+		addr3 = 127
+		
+		self.setTestValueLabels(dcs, "Enter the first, mid, and last supported decoder addresses, click 'Done' when ready", "First Documented Address", addr1, "Mid Documented Address", addr2, "Last Documented Address", addr3)
+		action = self.waitForProceed(dcs)
+		if action == -1:
+			self.resetTestValueLabels(dcs)
+			return
+		dcs.exitButton.enabled = True
+		dcs.nextButton.enabled = True
+		dcs.prevButton.enabled = True
+		dcs.doneButton.enabled = True
+		
+		if dcs.testValue1.text.isnumeric():
+			addr1 = int(dcs.testValue1.text)
+		if dcs.testValue2.text.isnumeric():
+			addr2 = int(dcs.testValue2.text)
+		if dcs.testValue3.text.isnumeric():
+			addr3 = int(dcs.testValue3.text)
+			
+		addrlist = [addr1, addr2, addr3]
+		done = False
+		addr = 0
+		while not done:
+			self.jmri_test_throttle_address = addrlist[addr]
+			#
+			# Configure the throttle
+			#
+			self.configureThrottle(dcs)
+			#
+			# Execute the test
+			#
+			if self.jmri_throttle_direction:
+				thdir = "FWD"
+			else:
+				thdir = "REV"
+			step = 1
+			speed = self.getThrottleSpeedFrom28StepTable(step)
+			dcs.testStatus.text = "Address = %d, %s Step %d, Throttle Value: %7.3f" % (self.jmri_test_throttle_address, thdir, step, speed)
+			self.setThrottle28SpeedStep(dcs, step)
+			action = self.waitForProceed(dcs)
+			if action == 1:
+				addr = addr + 1
+			elif action == 2:
+				addr = addr - 1
+			elif action == 0:
+				done = True
+			elif action == -1:
+				done = True
+				
+			if addr < 0:
+				addr = 0
+			if addr > len(addrlist)-1:
+				addr = len(addrlist)-1
+
+		self.resetTestValueLabels(dcs)
+		return
+	#-----------------------------------------------------------------------------------
+	#
+	# S-9.2-cab3_28steps_forward
+	#	
+	#-----------------------------------------------------------------------------------
+	def test_Sdash9dot2dashcab3_28steps_forward(self, name, dcs):
 		#
 		# Configure global test settings
 		#
@@ -450,10 +756,10 @@ class DCSConformanceTests:
 		self.speed28Steps(name, dcs)
 	#-----------------------------------------------------------------------------------
 	#
-	# S-9.2-A.2, 28 speed steps reverse
+	# S-9.2-cab3_28steps_reverse
 	#	
 	#-----------------------------------------------------------------------------------
-	def test_Sdash9dot2dashAdot2(self, name, dcs):
+	def test_Sdash9dot2dashcab3_steps_reverse(self, name, dcs):
 		#
 		# Configure global test settings
 		#
@@ -502,7 +808,7 @@ class DCCCommandStationControl(jmri.jmrit.automat.AbstractAutomaton) :
 		self.nextButton.enabled = False
 		self.prevButton.enabled = False
 		self.doneButton.enabled = False
-
+		
 		while self.scriptState == "wait":
 			if self.testExit:
 				self.frame.dispose()
@@ -550,6 +856,9 @@ class DCCCommandStationControl(jmri.jmrit.automat.AbstractAutomaton) :
 #-----------------------------------------------------------------------------------
 	def setup(self):
 		
+		self.testPanelValue1 = 0
+		self.testPanelValue2 = 0
+		self.testPanelValue3 = 0
 		self.nmraTests = DCSConformanceTests()
 		self.nmraTests.buildTestList()
 		
@@ -562,29 +871,45 @@ class DCCCommandStationControl(jmri.jmrit.automat.AbstractAutomaton) :
 		# create the start button
 		self.startButton = javax.swing.JButton("Run")
 		self.startButton.actionPerformed = self.whenMyStartButtonClicked
-		self.testStartSelect = javax.swing.JLabel("Press 'Run' to execute the selected test")
+		self.testStartSelect = javax.swing.JLabel("Click 'Run' to execute the selected test")
 
 		self.nextButton = javax.swing.JButton("Next")
 		self.nextButton.actionPerformed = self.whenMyNextButtonClicked
-		self.testNextSelect = javax.swing.JLabel("Press 'Next' for next step")
+		self.testNextSelect = javax.swing.JLabel("Click 'Next' for next step")
 
 		self.prevButton = javax.swing.JButton("Prev")
 		self.prevButton.actionPerformed = self.whenMyPrevButtonClicked
-		self.testPrevSelect = javax.swing.JLabel("Press 'Prev' for previous")
+		self.testPrevSelect = javax.swing.JLabel("Click 'Prev' for previous")
 
 		self.doneButton = javax.swing.JButton("Done")
 		self.doneButton.actionPerformed = self.whenMyDoneButtonClicked
-		self.testDoneSelect = javax.swing.JLabel("Press 'Done' when done with test")
+		self.testDoneSelect = javax.swing.JLabel("Click 'Done' when done with test")
 
 		self.exitButton = javax.swing.JButton("Exit")
 		self.exitButton.actionPerformed = self.whenMyExitButtonClicked
-		self.testExitSelect = javax.swing.JLabel("Press 'Exit' when done")
+		self.testExitSelect = javax.swing.JLabel("Click 'Exit' when done")
 
+		self.testValueLabel1 = javax.swing.JLabel("Test Value 1")
+		self.testValueLabel2 = javax.swing.JLabel("Test Value 2")
+		self.testValueLabel3 = javax.swing.JLabel("Test Value 3")
+		self.testValue1 = javax.swing.JTextField(5)
+		self.testValuePanel1 = javax.swing.JPanel()
+		self.testValuePanel1.add(self.testValueLabel1)
+		self.testValuePanel1.add(self.testValue1)
+		self.testValue2 = javax.swing.JTextField(5)
+		self.testValuePanel2 = javax.swing.JPanel()
+		self.testValuePanel2.add(self.testValueLabel2)
+		self.testValuePanel2.add(self.testValue2)
+		self.testValue3 = javax.swing.JTextField(5)
+		self.testValuePanel3 = javax.swing.JPanel()
+		self.testValuePanel3.add(self.testValueLabel3)
+		self.testValuePanel3.add(self.testValue3)
 
 		self.testIDLabel = javax.swing.JLabel("", javax.swing.JLabel.CENTER)
 		self.testIDLabel.setText("Select Test")
 
-		self.status = javax.swing.JLabel("Test Status", javax.swing.JLabel.CENTER)
+		self.testInfoMessage = javax.swing.JLabel("Test Value Labels with change if a test requires user input", javax.swing.JLabel.CENTER)
+		self.testStatus = javax.swing.JLabel("Test status will appear here", javax.swing.JLabel.CENTER)
 		
 		self.testID = javax.swing.JComboBox()
 		for test in self.nmraTests.getTestList():
@@ -593,18 +918,22 @@ class DCCCommandStationControl(jmri.jmrit.automat.AbstractAutomaton) :
 		self.panel = javax.swing.JPanel()
 		self.frame.contentPane.add(self.testIDLabel)
 		self.frame.contentPane.add(self.testID)
+		self.frame.contentPane.add(self.testStartSelect)
+		self.frame.contentPane.add(self.testNextSelect)
+		self.frame.contentPane.add(self.testPrevSelect)
+		self.frame.contentPane.add(self.testDoneSelect)
+		self.frame.contentPane.add(self.testExitSelect)
 		self.panel.add(self.startButton)
 		self.panel.add(self.nextButton)
 		self.panel.add(self.prevButton)
 		self.panel.add(self.doneButton)
 		self.panel.add(self.exitButton)
 		self.frame.contentPane.add(self.panel)
-		self.frame.contentPane.add(self.testStartSelect)
-		self.frame.contentPane.add(self.testNextSelect)
-		self.frame.contentPane.add(self.testPrevSelect)
-		self.frame.contentPane.add(self.testDoneSelect)
-		self.frame.contentPane.add(self.testExitSelect)
-		self.frame.contentPane.add(self.status)
+		self.frame.contentPane.add(self.testInfoMessage)
+		self.frame.contentPane.add(self.testValuePanel1)
+		self.frame.contentPane.add(self.testValuePanel2)
+		self.frame.contentPane.add(self.testValuePanel3)
+		self.frame.contentPane.add(self.testStatus)
 		self.frame.pack()
 		self.frame.show()
 		self.frame.setLocation(400, 600)
